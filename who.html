@@ -363,7 +363,8 @@ function initTrigger() {
                         clearInterval(typeInterval);
                         box.style.overflow = 'hidden';
                         setTimeout(() => {
-                            window.location.href = CONFIG.jump;
+                            // 这里修复了！从 CONFIG.jump 改成 CONFIG.jumpUrl
+                            window.location.href = CONFIG.jumpUrl;
                         }, CONFIG.afterTypeDelay);
                     }
                 }, CONFIG.typeSpeed);
