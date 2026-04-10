@@ -1,0 +1,251 @@
+<!DOCTYPE html> 
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-image: url('image/1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            position: relative;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+
+            /* 淡入时长：0.3s，可自行修改 */
+            opacity: 0;
+            animation: fadeIn 1.2s ease forwards;
+        }
+
+        /* 纯淡入动画，无位移 */
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* 按钮淡入，眼睛 canvas 不在这里 */
+        .main-btn-img,
+        .video-btn,
+        .hidden-btn {
+            opacity: 0;
+            animation: fadeIn 1.2s ease forwards;
+        }
+
+        .main-btn-img {
+            position: absolute;
+            bottom: 120px;
+            left: 570px;
+            width: 200px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .main-btn-img:hover { transform: scale(1.08); }
+
+        .hidden-btn {
+            position: absolute;
+            top: 40px;
+            right: 110px;
+            width: 60px;
+            height: 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 20;
+        }
+
+        .hidden-btn.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .hidden-btn img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-btn {
+            position: absolute;
+            top: 130px;
+            right: 55px;
+            width: 290px;
+            height: 350px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .video-btn:hover { transform: scale(1.1); }
+
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1000px;
+            background: #ffffff;
+            border-radius: 10px;
+            z-index: 9999;
+        }
+        .video-modal video {
+            width: 100%;
+        }
+
+        /* 眼睛 canvas：直接显示，不淡入 */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+            filter: blur(0.4px);
+            opacity: 1; /* 直接显示 */
+        }
+    </style>
+</head>
+
+<body>
+
+<img src="image/3.jpg" class="main-btn-img" onclick="openMainWindow()">
+
+<button class="hidden-btn" onclick="openHiddenWindow()">
+    <img src="image/5.jpg">
+</button>
+
+<img src="image/4.png" class="video-btn" onclick="openVideoModal()">
+
+<div class="video-modal" id="videoModal">
+    <video id="myVideo" muted playsinline preload="auto">
+        <source src="camera.mp4" type="video/mp4">
+    </video>
+</div>
+
+<script>
+const hiddenBtn = document.querySelector('.hidden-btn');
+
+function openMainWindow() {
+    hiddenBtn.classList.add('show');
+    window.open("helpfind.html", "_blank");
+}
+
+function openHiddenWindow() {
+    window.open("dontknow.html", "_blank");
+}
+
+const video = document.getElementById("myVideo");
+const modal = document.getElementById("videoModal");
+
+async function openVideoModal() {
+    modal.style.display = "block";
+    video.currentTime = 0;
+    try { await video.play(); } catch (e) {}
+}
+
+function closeVideoModal() {
+    modal.style.display = "none";
+    video.pause();
+}
+
+video.addEventListener("ended", closeVideoModal);
+
+window.addEventListener("click", function(e) {
+    if (e.target === modal) closeVideoModal();
+});
+</script>
+
+<script>
+// 完全保留你原来的眼睛坐标 100% 不变
+let leftEye = {x: 257, y: 324.5};
+let rightEye = {x: 305, y: 323};
+
+let followSpeed = 0.08;
+let targetPx = 0, targetPy = 0;
+let currentPx = 0, currentPy = 0;
+
+// 基准设计宽高（你做这个页面的原始屏幕大小）
+const DESIGN_WIDTH = 1280;
+const DESIGN_HEIGHT = 800;
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+}
+
+function draw() {
+    clear();
+
+    // 计算缩放比例（核心：等比例缩放，不改变相对位置）
+    let scaleX = windowWidth / DESIGN_WIDTH;
+    let scaleY = windowHeight / DESIGN_HEIGHT;
+    let scale = Math.min(scaleX, scaleY);
+
+    // 计算居中偏移
+    let offsetX = (windowWidth - DESIGN_WIDTH * scale) / 2;
+    let offsetY = (windowHeight - DESIGN_HEIGHT * scale) / 2;
+
+    // 鼠标坐标转换
+    let mx = (mouseX - offsetX) / scale;
+    let my = (mouseY - offsetY) / scale;
+
+    // 眼睛位置（按比例计算，永远在眼眶）
+    let lx = leftEye.x * scale + offsetX;
+    let ly = leftEye.y * scale + offsetY;
+    let rx = rightEye.x * scale + offsetX;
+    let ry = rightEye.y * scale + offsetY;
+
+    let centerX = (lx + rx) / 2;
+    let centerY = ly;
+    let mouseDist = dist(mx, my, (leftEye.x+rightEye.x)/2, leftEye.y);
+    let activateDistance = 400;
+
+    if (mouseDist < activateDistance) {
+        let dx = mx - (leftEye.x + rightEye.x)/2;
+        let dy = my - leftEye.y;
+        let angle = atan2(dy, dx);
+        let maxMoveX = 3;
+        let maxMoveY = 1;
+        targetPx = cos(angle) * maxMoveX;
+        targetPy = sin(angle) * maxMoveY;
+    } else {
+        targetPx = 0;
+        targetPy = 0;
+    }
+
+    currentPx = lerp(currentPx, targetPx, followSpeed);
+    currentPy = lerp(currentPy, targetPy, followSpeed);
+
+    // 绘制眼睛（等比例）
+    drawEye(lx, ly, currentPx * scale, currentPy * scale, scale);
+    drawEye(rx, ry, currentPx * scale, currentPy * scale, scale);
+}
+
+function drawEye(x, y, px, py, scale) {
+    push();
+    translate(x, y);
+    noStroke();
+    fill(67, 42, 27);
+    ellipse(px, py, 15 * scale, 15 * scale);
+    fill(29, 19, 14);
+    ellipse(px, py, 2 * scale, 2 * scale);
+    fill(10);
+    ellipse(px, py, 11 * scale, 11 * scale);
+    fill(255);
+    ellipse(px + 3*scale, py - 4*scale, 3*scale, 3*scale);
+    pop();
+}
+
+// 窗口大小改变时自动重绘
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>

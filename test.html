@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>相似度测试 - 寻人专用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ====================== 【可修改：全局背景图片】 ====================== */
+        body {
+            background: url("image/6.png") no-repeat center center;
+            background-size: cover;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 1s ease-out;
+        }
+
+        /* 黑屏遮罩 */
+        #blackScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 1.5s ease;
+        }
+
+        /* 问题容器居中 */
+        .question-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1200px;
+            text-align: center;
+            display: none;
+        }
+
+        /* 文字样式：更清晰 */
+        .question-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffffff;
+            filter: blur(1.0px);
+            margin-bottom: 60px;
+            line-height: 1.4;
+            opacity: 0;
+        }
+
+        .question-text {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            filter: blur(0.9px);
+            margin-bottom: 50px;
+            line-height: 1.5;
+            opacity: 0;
+        }
+
+        /* 选项按钮 */
+        .option-btn {
+            display: block;
+            width: fit-content;
+            margin: 25px auto;
+            padding: 12px 30px;
+            font-family: Arial, sans-serif;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffffff;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            filter: blur(0.6px);
+            transition: all 0.2s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .option-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .option-btn:hover {
+            filter: blur(0.3px);
+            transform: scale(1.03);
+        }
+
+        /* 画面抖动故障动画 */
+        @keyframes glitch {
+            0% { transform: translate(-50%, -50%) translate(0, 0); }
+            20% { transform: translate(-50%, -50%) translate(-5px, 3px); }
+            40% { transform: translate(-50%, -50%) translate(3px, -2px); }
+            60% { transform: translate(-50%, -50%) translate(-2px, 5px); }
+            80% { transform: translate(-50%, -50%) translate(4px, -4px); }
+            100% { transform: translate(-50%, -50%) translate(0, 0); }
+        }
+
+        .glitch-effect {
+            animation: glitch 0.3s infinite;
+        }
+
+        /* 结果文本逐行浮现 */
+        .result-text {
+            font-size: 42px;
+            font-weight: bold;
+            color: #ffffff;
+            filter: blur(0.7px);
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
+
+        .result-text span {
+            opacity: 0;
+            display: block;
+            margin: 10px 0;
+        }
+
+        /* ====================== 【返回按钮：比结果文本更小】 ====================== */
+        .back-btn {
+            font-size: 26px; /* 比结果 42px 更小 */
+            font-weight: bold;
+            color: #ffffff;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            filter: blur(0.6px);
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+
+        .back-btn.show {
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        /* 首页底部返回按钮 固定在最下方 */
+        .start-bottom-back {
+            position: fixed;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            filter: blur(0.6px);
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            z-index: 20;
+        }
+        .start-bottom-back.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="blackScreen"></div>
+
+    <!-- 开始页面 + 底部返回按钮 -->
+    <div id="start" class="question-container">
+        <div class="question-title">你和这个人的相似度测试</div>
+        <div class="question-text">仅用于寻人。</div>
+        <button class="option-btn" onclick="goToQuestion(1)">点击开始</button>
+
+        <!-- 👇 首页最下方 返回按钮 -->
+        <button class="start-bottom-back" id="bottomBackBtn" onclick="window.location.href='helpfind.html'">返回</button>
+    </div>
+
+    <!-- 问题1 -->
+    <div id="q1" class="question-container">
+        <div class="question-text">1、你更接近哪一种存在？</div>
+        <button class="option-btn" onclick="goToQuestion(2)">A. 被需要时才出现</button>
+        <button class="option-btn" onclick="goToQuestion(3)">B. 总是在那里，但不被看见</button>
+        <button class="option-btn" onclick="goToQuestion(4)">C. 已经离开，但仍被提起</button>
+        <button class="option-btn" onclick="selectDontKnow(2)">D. 我不知道</button>
+    </div>
+
+    <!-- 问题2 -->
+    <div id="q2" class="question-container">
+        <div class="question-text">2、你通常在什么时候最清醒？</div>
+        <button class="option-btn" onclick="goToQuestion(6)">A. 凌晨</button>
+        <button class="option-btn" onclick="goToQuestion(7)">B. 白天</button>
+        <button class="option-btn" onclick="goToQuestion(4)">C. 傍晚</button>
+        <button class="option-btn" onclick="selectDontKnow(5)">D. 我不知道</button>
+    </div>
+
+    <!-- 问题3 -->
+    <div id="q3" class="question-container">
+        <div class="question-text">3、当你进入一个房间，你会注意到什么？</div>
+        <button class="option-btn" onclick="goToQuestion(8)">A. 人</button>
+        <button class="option-btn" onclick="goToQuestion(6)">B. 光线</button>
+        <button class="option-btn" onclick="goToQuestion(9)">C. 出口</button>
+        <button class="option-btn" onclick="selectDontKnow(5)">D. 我不知道</button>
+    </div>
+
+    <!-- 问题4 -->
+    <div id="q4" class="question-container">
+        <div class="question-text">4、你是否经常被人提起？</div>
+        <button class="option-btn" onclick="goToQuestion(10)">A. 经常</button>
+        <button class="option-btn" onclick="goToQuestion(8)">B. 偶尔</button>
+        <button class="option-btn" onclick="goToQuestion(9)">C. 很少</button>
+        <button class="option-btn" onclick="selectDontKnow(5)">D. 我不知道</button>
+    </div>
+
+    <!-- 问题5 → 鼠标悬停500ms触发抖动跳转 -->
+    <div id="q5" class="question-container">
+        <div id="q5-text" class="question-text">5、你觉得“我不知道”是一种答案吗？</div>
+        <button class="option-btn" id="q5btn">A. 是</button>
+        <button class="option-btn" id="q5btn">B. 不是</button>
+        <button class="option-btn" id="q5btn">C. 视情况而定</button>
+    </div>
+
+    <!-- 问题6 -->
+    <div id="q6" class="question-container">
+        <div class="question-text">6、你更倾向于哪种画面？</div>
+        <button class="option-btn" onclick="goToQuestion(12)">A. 模糊的影子</button>
+        <button class="option-btn" onclick="goToQuestion(7)">B. 清晰的人脸</button>
+        <button class="option-btn" onclick="goToQuestion(13)">C. 反光中的自己</button>
+    </div>
+
+    <!-- 问题7 -->
+    <div id="q7" class="question-container">
+        <div class="question-text">7、你是否相信每个人都有一个“替代版本”？</div>
+        <button class="option-btn" onclick="goToQuestion(13)">A. 相信</button>
+        <button class="option-btn" onclick="goToQuestion(14)">B. 不相信</button>
+        <button class="option-btn" onclick="goToQuestion(11)">C. 不确定</button>
+    </div>
+
+    <!-- 问题8 -->
+    <div id="q8" class="question-container">
+        <div class="question-text">8、你有没有对陌生人产生过熟悉感？</div>
+        <button class="option-btn" onclick="goToQuestion(13)">A. 经常</button>
+        <button class="option-btn" onclick="goToQuestion(12)">B. 偶尔</button>
+        <button class="option-btn" onclick="goToQuestion(14)">C. 从未</button>
+    </div>
+
+    <!-- 问题9 -->
+    <div id="q9" class="question-container">
+        <div class="question-text">9、你更害怕哪种情况？</div>
+        <button class="option-btn" onclick="goToQuestion(12)">A. 被遗忘</button>
+        <button class="option-btn" onclick="goToQuestion(13)">B. 被认错</button>
+        <button class="option-btn" onclick="goToQuestion(15)">C. 从未存在过</button>
+    </div>
+
+    <!-- 问题10 -->
+    <div id="q10" class="question-container">
+        <div class="question-text">10、如果别人描述你，你觉得一般来说准确吗？</div>
+        <button class="option-btn" onclick="goToQuestion(14)">A. 会</button>
+        <button class="option-btn" onclick="goToQuestion(13)">B. 不会</button>
+        <button class="option-btn" onclick="goToQuestion(8)">C. 取决于是谁</button>
+    </div>
+
+    <!-- 问题11 -->
+    <div id="q11" class="question-container">
+        <div class="question-text">11、你是否会怀疑自己的记忆？</div>
+        <button class="option-btn" onclick="goToQuestion(13)">A. 经常</button>
+        <button class="option-btn" onclick="goToQuestion(12)">B. 偶尔</button>
+        <button class="option-btn" onclick="goToQuestion(14)">C. 从不</button>
+    </div>
+
+    <!-- 问题12 -->
+    <div id="q12" class="question-container">
+        <div class="question-text">12、你更接近哪种状态？</div>
+        <button class="option-btn" onclick="goToQuestion(16)">A. 正在消失</button>
+        <button class="option-btn" onclick="goToQuestion(17)">B. 刚刚出现</button>
+        <button class="option-btn" onclick="goToQuestion(14)">C. 一直存在</button>
+    </div>
+
+    <!-- 问题13 -->
+    <div id="q13" class="question-container">
+        <div class="question-text">13、你是否觉得自己曾经出现在别人的梦境里</div>
+        <button class="option-btn" onclick="goToQuestion(16)">A. 是</button>
+        <button class="option-btn" onclick="goToQuestion(14)">B. 否</button>
+        <button class="option-btn" onclick="goToQuestion(14)">C. 我不知道</button>
+    </div>
+
+    <!-- 问题14 -->
+    <div id="q14" class="question-container">
+        <div class="question-text">14、你更认同哪句话？</div>
+        <button class="option-btn" onclick="showResult(1)">A. 我是我</button>
+        <button class="option-btn" onclick="goToQuestion(17)">B. 我可能变成别人</button>
+        <button class="option-btn" onclick="goToQuestion(16)">C. 我不确定我是谁</button>
+    </div>
+
+    <!-- 问题15 -->
+    <div id="q15" class="question-container">
+        <div class="question-text">15、如果没有人记得你，你是否还存在？</div>
+        <button class="option-btn" onclick="goToQuestion(14)">A. 是</button>
+        <button class="option-btn" onclick="goToQuestion(16)">B. 否</button>
+        <button class="option-btn" onclick="goToQuestion(17)">C. 我不知道</button>
+    </div>
+
+    <!-- 问题16 -->
+    <div id="q16" class="question-container">
+        <div class="question-text">16、你是否觉得“有人正在替你生活”？</div>
+        <button class="option-btn" onclick="showResult(4)">A. 是</button>
+        <button class="option-btn" onclick="showResult(2)">B. 否</button>
+        <button class="option-btn" onclick="showResult(3)">C. 我不知道</button>
+    </div>
+
+    <!-- 问题17 -->
+    <div id="q17" class="question-container">
+        <div class="question-text">17、你有没有在梦里见过一个不认识的人？</div>
+        <button class="option-btn" onclick="showResult(5)">A. 见过</button>
+        <button class="option-btn" onclick="showResult(2)">B. 没见过</button>
+        <button class="option-btn" onclick="showResult(4)">C. 可能见过</button>
+    </div>
+
+    <!-- 结果页面 -->
+    <div id="result" class="question-container">
+        <div id="result-content" class="result-text"></div>
+        <!-- ====================== 【可修改：返回按钮跳转链接】 ====================== -->
+        <button class="back-btn" onclick="window.location.href='helpfind.html'">返回</button>
+    </div>
+
+    <script>
+        // 全局记录“我不知道”次数
+        let dontKnowCount = 0;
+
+        // 开屏立刻显示
+        setTimeout(() => {
+            const black = document.getElementById('blackScreen');
+            black.style.opacity = 0;
+            setTimeout(() => {
+                black.remove();
+                document.body.style.opacity = 1;
+                document.getElementById('start').style.display = 'block';
+                showTitleWithDelay(800); // 标题每行间隔800ms浮现
+            }, 1500);
+        }, 300);
+
+        // ====================== 【标题每行浮现间隔 800ms】 ======================
+        function showTitleWithDelay(delay) {
+            const title = document.querySelector('.question-title');
+            const text = document.querySelector('.question-text');
+            const btn = document.querySelector('.option-btn');
+            const bottomBack = document.getElementById('bottomBackBtn');
+            
+            setTimeout(() => title.style.opacity = 1, delay);
+            setTimeout(() => text.style.opacity = 1, delay * 2);
+            setTimeout(() => btn.classList.add('show'), delay * 3);
+            setTimeout(() => bottomBack.classList.add('show'), delay * 4); // 底部返回淡入
+        }
+
+        // 选择 我不知道
+        function selectDontKnow(nextQ) {
+            dontKnowCount++;
+            goToQuestion(nextQ);
+        }
+
+        // 切换问题
+        function goToQuestion(qNum) {
+            document.querySelectorAll('.question-container').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('glitch-effect');
+            });
+
+            // 前4题结束后判断是否跳去q5
+            if (qNum === 5 && dontKnowCount < 2) {
+                qNum = 10;
+            }
+
+            const target = document.getElementById(`q${qNum}`);
+            target.style.display = 'block';
+
+            // 显示当前问题文字
+            const qText = target.querySelector('.question-text');
+            if(qText) qText.style.opacity = 1;
+
+            if (qNum === 5) {
+                bindQ5HoverAll();
+                showQ5Options();
+            } else {
+                showOptions(`q${qNum}`);
+            }
+        }
+
+        // 正常选项浮现
+        function showOptions(id) {
+            const btns = document.querySelectorAll(`#${id} .option-btn`);
+            btns.forEach((btn, i) => {
+                setTimeout(() => btn.classList.add('show'), 200 + i * 200);
+            });
+        }
+
+        // 问题5选项逐个浮现
+        function showQ5Options() {
+            const btns = document.querySelectorAll('#q5 .option-btn');
+            btns.forEach((btn, i) => {
+                setTimeout(() => btn.classList.add('show'), 600 + i * 800);
+            });
+        }
+
+        // ====================== 问题5：鼠标悬浮选项 0.5秒 触发抖动跳转 ======================
+        let hoverTimer;
+        function bindQ5HoverAll() {
+            const btns = document.querySelectorAll('#q5 #q5btn');
+            btns.forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    hoverTimer = setTimeout(() => {
+                        glitchAndGoTo(6);
+                    }, 500);
+                });
+                btn.addEventListener('mouseleave', () => {
+                    clearTimeout(hoverTimer);
+                });
+            });
+        }
+
+        // 抖动+跳转
+        function glitchAndGoTo(targetQ) {
+            const q5 = document.getElementById('q5');
+            q5.classList.add('glitch-effect');
+            setTimeout(() => {
+                goToQuestion(targetQ);
+            }, 900);
+        }
+
+        // ====================== 结果逐行浮现 → 结束后才显示返回按钮 ======================
+        function showResult(resultNum) {
+            document.querySelectorAll('.question-container').forEach(el => {
+                el.style.display = 'none';
+            });
+            document.getElementById('result').style.display = 'block';
+
+            const resultData = {
+                1: `你的匹配度为 12%
+你不是他
+你也不会认错他`,
+                2: `你的匹配度为 34%
+你从未靠近过他
+但他可能见过你`,
+                3: `你的匹配度为 56%
+你和他共享一些模糊的部分
+但你仍然是你`,
+                4: `你的匹配度为 81%
+你有可能在某些时刻成为过他
+或者，他借用了你`,
+                5: `你的匹配度为 97%
+你已经见过他
+他也见过你
+…
+你在哪？`
+            };
+
+            const text = resultData[resultNum];
+            const lines = text.split('\n');
+            const html = lines.map(line => `<span>${line}</span>`).join('');
+            document.getElementById('result-content').innerHTML = html;
+
+            const spans = document.querySelectorAll('#result-content span');
+            spans.forEach((span, i) => {
+                setTimeout(() => {
+                    span.style.opacity = 1;
+                    span.style.transition = 'opacity 0.8s ease';
+                }, 400 + i * 600);
+            });
+
+            // 结果全部浮现完 → 显示返回按钮
+            setTimeout(() => {
+                document.querySelector('.back-btn').classList.add('show');
+            }, 400 + spans.length * 600 + 500);
+        }
+
+        // 重置测试
+        function restartTest() {
+            dontKnowCount = 0;
+            document.querySelectorAll('.question-container').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('glitch-effect');
+            });
+            document.getElementById('start').style.display = 'block';
+            showTitleWithDelay(800);
+        }
+    </script>
+</body>
+</html>

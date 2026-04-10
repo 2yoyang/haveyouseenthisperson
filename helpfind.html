@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义按钮页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 页面一开始就是黑色，不会露出背景 */
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        body {
+            background: url("image/2.jpg") no-repeat center center;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            position: relative;
+            overflow: hidden;
+
+            /* 初始完全隐藏 */
+            opacity: 0;
+            transition: opacity 0.6s ease-out; /* 淡入速度 */
+        }
+
+        /* 全屏黑色遮罩（开场纯黑用） */
+        #blackScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        /* 按钮样式 */
+        .text-btn {
+            position: absolute;
+            font-family: Arial, sans-serif;
+            font-size: 60px;
+            font-weight: bold;
+            color: #000;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            filter: blur(2px);
+            transition: 0.2s;
+            z-index: 10;
+        }
+
+        .text-btn:hover {
+            filter: blur(1px);
+            transform: scale(1.02);
+        }
+
+        .btn-1 {
+            top: 730px;
+            left: 990px;
+            font-size: 36px;
+        }
+
+        .btn-2 {
+            top: 230px;
+            left: 450px;
+            font-size: 45px;
+        }
+
+        .btn-3 {
+            top: 476px;
+            left: 1488px;
+            font-size: 40px;
+        }
+
+        /* ========== 左下角 back 按钮 ========== */
+        .btn-back {
+            bottom: 250px;    /* 距离底部高度 —— 可修改 */
+            left: 70px;      /* 距离左侧宽度 —— 可修改 */
+            font-size: 40px; /* 按钮大小 —— 可修改 */
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- 开场全屏黑幕 -->
+<div id="blackScreen"></div>
+
+<!-- 👇 可替换链接按钮 -->
+<button class="text-btn btn-1" onclick="window.location.href='who.html'">who？</button>
+<button class="text-btn btn-2" onclick="window.location.href='test.html'">test</button>
+<button class="text-btn btn-3" onclick="window.location.href='logs.html'">logs</button>
+
+<!-- 👇 左下角 back 按钮 -->
+<button class="text-btn btn-back" onclick="window.location.href='index.html'">back</button>
+
+<script>
+    // 一进来就是黑，然后统一淡入
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const black = document.getElementById('blackScreen');
+            black.style.opacity = 0;
+            document.body.style.opacity = 1;
+
+            // 淡入完删除黑幕
+            setTimeout(() => black.remove(), 600);
+        }, 200);
+    });
+</script>
+
+</body>
+</html>

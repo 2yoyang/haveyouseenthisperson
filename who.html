@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式文件夹便签本</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Arial", sans-serif;
+            overflow: hidden;
+            background: url("image/6.png") no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1920px;
+            height: 1080px;
+            opacity: 0;
+            transition: opacity 1.8s ease;
+            pointer-events: none;
+        }
+
+        .container.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .folder {
+            position: absolute;
+            top: 70px;
+            left: 500px;
+            width: 800px;
+            height: 930px;
+            background: url("image/folder.png") no-repeat center center;
+            background-size: contain;
+            z-index: 1;
+        }
+
+        .folder-text-area {
+            position: absolute;
+            top: 112px;
+            left: 215px;
+            width: 750px;
+            height: 155px;
+            overflow: auto;
+            overflow-x: hidden;
+            background: transparent;
+            z-index: 2;
+        }
+
+        .folder-bottom-text-area {
+            position: absolute;
+            top: 277px;
+            left: 215px;
+            width: 320px;
+            height: 133px;
+            overflow: auto;
+            overflow-x: hidden;
+            background: transparent;
+            z-index: 2;
+        }
+
+        .note {
+            position: absolute;
+            top: 400px;
+            left: 400px;
+            width: 600px;
+            height: 650px;
+            transform: rotate(0deg);
+            background: url("image/note.png") no-repeat center center;
+            background-size: contain;
+            z-index: 3;
+        }
+
+        .note-text-area {
+            position: absolute;
+            top: 80px;
+            left: 170px;
+            width: 250px;
+            height: 470px;
+            overflow: auto;
+            overflow-x: hidden;
+            background: transparent;
+            z-index: 4;
+        }
+
+        .notebook {
+            position: absolute;
+            top: 340px;
+            left: 820px;
+            width: 700px;
+            height: 630px;
+            transform: rotate(1deg);
+            background: url("image/notebook.png") no-repeat center center;
+            background-size: contain;
+            z-index: 5;
+        }
+
+        .notebook-text-area {
+            position: absolute;
+            top: 195px;
+            left: 375px;
+            width: 200px;
+            height: 300px;
+            overflow: auto;
+            overflow-x: hidden;
+            background: transparent;
+            z-index: 6;
+        }
+
+        /* ====================== 【可修改】自定义输入整体区域 ====================== */
+        .notebook-custom-area {
+            position: absolute;
+            top: 188px;       /* 整体 上下位置 */
+            left: 120px;      /* 整体 左右位置 */
+            width: 220px;     /* 整体 宽度 */
+            height: 310px;    /* 整体 高度 */
+            background: transparent;
+            z-index: 7;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: auto;
+            overflow-x: hidden;
+        }
+
+        /* ====================== 【可修改】用户文字显示区域 ====================== */
+        #userTextDisplay {
+            position: relative;
+            top: 30px;         /* 文字区域 上下微调 */
+            left: 10px;        /* 文字区域 左右微调 */
+            width: 100%;
+            min-height: 260px;
+            font-family: "Arial", sans-serif;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #000;
+            white-space: pre-wrap;
+            user-select: none;
+            padding: 5px;
+            filter: blur(0.5px);
+            margin-bottom: 10px;
+        }
+
+        /* ====================== 【可修改】左上方固定文字 ====================== */
+        .static-label {
+            position: absolute;
+            top: -35px;        /* 文字 上下位置 */
+            left: 20px;        /* 文字 左右位置 */
+            font-family: "Arial", sans-serif;
+            font-size: 13px;
+            color: #000;
+            filter: blur(0.5px);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* ====================== 【可修改】右下新增文字 ====================== */
+        .thanks-label {
+            position: absolute;
+            top: 22px;         /* 上下位置 */
+            right: 12px;       /* 左右位置 */
+            font-family: "Arial", sans-serif;
+            font-size: 13px;
+            color: #000;
+            filter: blur(0.5px);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* ====================== 【可修改】点击触发区域 ====================== */
+        .input-wrapper {
+            width: 100%;
+            height: 50px;    /* 点击区域高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: text;
+            position: relative;
+        }
+
+        /* ====================== 【可修改】输入横线 ====================== */
+        .input-line {
+            width: 160px;        /* 横线长度 */
+            height: 2px;         /* 横线粗细 */
+            background: #222;
+            margin: 0 auto;
+            filter: blur(0.3px); /* 横线模糊度 */
+            transform: rotate(1deg);
+        }
+
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { display: none; }
+
+        .scrolling-text {
+            width: 100%;
+            font-family: "Arial", sans-serif;
+            line-height: 1.8;
+            color: #000;
+            white-space: pre-wrap;
+            user-select: none;
+            padding: 5px;
+            filter: blur(0.5px);
+        }
+
+        .folder-text-area .scrolling-text {
+            font-size: 16px;
+        }
+        .folder-bottom-text-area .scrolling-text {
+            font-size: 17px;
+        }
+        .note-text-area .scrolling-text {
+            font-size: 15px;
+        }
+        .notebook-text-area .scrolling-text {
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <div class="folder">
+        <div class="folder-text-area">
+            <div class="scrolling-text">
+脚步声总是很轻
+一般不会主动和别人社交
+对别人的情绪反应略微滞后
+很少表达意见，但总是在关键时刻开口
+似乎不太理解尴尬这种情绪
+和他说话时会不自觉压低声音
+总有人觉得他很熟悉，但说不出在哪见过、长得像谁
+很少有人记得他是怎么离开的
+有人看到他的时候，他总是刚好也在“看向别的地方”
+对“再见”这个词貌似有点敏感
+更容易记住并理解别人没说出口的部分
+            </div>
+        </div>
+
+        <div class="folder-bottom-text-area" id="triggerBox">
+            <div class="scrolling-text" id="textContainer">
+身体里住着缓慢与错位的时间
+对时间的记忆是错位的，比如“那是一个已经结束的星期三”
+常常把还没发生的事情说成好像已经结束了
+对“昨天”和“上周”没有清晰区分
+会把很久以前的事记成刚刚发生
+好像总是比别人慢半拍
+眨眼频率比别人慢一点
+和他待在同一个空间会觉得时间变慢
+对发生的事情仿佛提前知道结果
+会在别人记忆的边缘出现，但不作为主角
+说话前会先轻轻吸一口气，但声音很轻
+笑的时候没有声音
+偶尔会突然停止呼吸几秒
+...........
+            </div>
+        </div>
+    </div>
+
+    <div class="note">
+        <div class="note-text-area">
+            <div class="scrolling-text">
+知道每一栋楼的安全出口在哪里，但从来没走过正门
+会在周日下午出现在塔楼的天台上
+知道附近的路灯几点亮起，几点熄灭
+有一条固定的游荡路线，但常常走错
+知道附近哪里可以暂时躲起来
+更习惯站在房间的角落而不是中心
+对封闭空间不抗拒，但会选择靠近出口的位置
+会在陌生人离开之后才进入那个空间
+偶尔会出现在本来不应该能进入的地方
+走路的时候故意不踩井盖
+注意到监控摄像头的话会回过头盯着看
+明明已经知道某些门是打不开的，但还是会去试
+声称对“消失”这个词有自己的理解，但从不解释
+            </div>
+        </div>
+    </div>
+
+    <div class="notebook">
+        <div class="notebook-text-area">
+            <div class="scrolling-text">
+爱用有线耳机，习惯把耳机线缠在手指上，一圈一圈勒出浅红的痕
+指甲剪得很短，但总是有细小的伤口
+手总是冰的，但不觉得冷
+无名指似乎断过
+右眼皮上有一颗痣
+喜欢用指腹去确认物体的边缘
+闻起来有一点像树皮
+记得某些气味，但说不出来源
+对某些声音有执念，比如风吹塑料袋、远处的电流声
+走路的时候肩膀几乎不动
+会在没有风的时候整理衣角
+有时候影子和动作不同步，但不明显
+            </div>
+        </div>
+
+        <div class="notebook-custom-area" id="customScrollArea">
+            <div id="userTextDisplay"></div>
+            <div class="input-wrapper" id="inputWrapper">
+                <div class="static-label">如有新线索也请提供</div>
+                <div class="input-line" id="inputLine"></div>
+                <div class="thanks-label">谢谢你的贡献</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ====================== 可修改参数 ======================
+const CONFIG = {
+    jumpUrl: "helpfind.html",
+    beforeTypeDelay: 2000,
+    typeSpeed: 240,
+    afterTypeDelay: 3000,
+    userTextSpeed: 100
+};
+// ======================================================
+
+window.onload = function() {
+    document.getElementById('mainContainer').classList.add('active');
+    initTrigger();
+    initCustomInput();
+};
+
+let triggered = false;
+
+function initTrigger() {
+    const box = document.getElementById('triggerBox');
+    const el = document.getElementById('textContainer');
+    const originalHTML = el.innerHTML;
+    const targetText = "你在找我吗？";
+
+    box.addEventListener('scroll', function() {
+        if (triggered) return;
+
+        if (box.scrollTop + box.clientHeight + 10 >= box.scrollHeight) {
+            triggered = true;
+            box.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                box.style.overflow = 'auto';
+                box.scrollTop = box.scrollHeight;
+
+                let i = 0;
+                const typeInterval = setInterval(() => {
+                    el.innerHTML = originalHTML + "<br>" + targetText.substring(0, i + 1);
+                    box.scrollTop = box.scrollHeight;
+                    i++;
+
+                    if (i >= targetText.length) {
+                        clearInterval(typeInterval);
+                        box.style.overflow = 'hidden';
+                        setTimeout(() => {
+                            window.location.href = CONFIG.jump;
+                        }, CONFIG.afterTypeDelay);
+                    }
+                }, CONFIG.typeSpeed);
+            }, CONFIG.beforeTypeDelay);
+        }
+    });
+}
+
+// 支持多条输入，旧文字保留，新文字换行显示
+function initCustomInput() {
+    const inputWrapper = document.getElementById('inputWrapper');
+    const display = document.getElementById('userTextDisplay');
+    const scrollArea = document.getElementById('customScrollArea');
+
+    let typing = false;
+
+    inputWrapper.onclick = () => {
+        if(typing) return;
+        const text = prompt('请输入你的文字：');
+        if(!text) return;
+
+        typing = true;
+        // 保留原有文字，新文字在下方换行显示
+        const oldText = display.innerText;
+        let i = 0;
+
+        const timer = setInterval(() => {
+            const newContent = oldText + (oldText ? '\n' : '') + text.substring(0, i + 1);
+            display.innerText = newContent;
+            scrollArea.scrollTop = scrollArea.scrollHeight;
+            i++;
+            if(i >= text.length){
+                clearInterval(timer);
+                typing = false;
+            }
+        }, CONFIG.userTextSpeed);
+    };
+}
+</script>
+
+</body>
+</html>
